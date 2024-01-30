@@ -17,6 +17,7 @@ backend servers
     balance roundrobin
     server web-01 34.239.253.146:80 check
     server web-02 100.26.158.196:80 check
+    http-response add-header X-Served-By $hostname
 " | sudo tee -a /etc/haproxy/haproxy.cfg
 
 # Restart HAProxy to apply changes
