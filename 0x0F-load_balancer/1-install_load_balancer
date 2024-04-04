@@ -1,24 +1,59 @@
 #!/usr/bin/env bash
-# This script installs and configures HAProxy on lb-01
+# install load balancer
 
-# Install HAProxy
-sudo apt-get update
-sudo apt-get install -y haproxy
 
-# Configure HAProxy to balance traffic between web-01 and web-02 using roundrobin
-echo "
-frontend web
+echo -e "Updating and doing some minor checks...\n"
+
+function install() {
+	command -v "$1" &> /dev/null
+
+	#shellcheck disable=SC2181
+	if [ $? -ne 0 ]; then
+		echo -e "	Installing: $1\n"
+		sudo apt-get update -y -qq && \
+			sudo apt-get install -y "$1" -qq
+		echo -e "\n"
+	else
+		echo -e "	${1} is already installed.\n"
+	fi
+}
+
+install haproxy #install haproxy
+
+echo -e "\nSetting up some minor stuff.\n"
+
+# backup default server config file
+sudo cp /etc/haproxy/haproxy.cfg haproxy_default.backup
+
+server_config=\
+"
+defaults
+  mode http
+  timeout client 15s
+  timeout connect 10s
+  timeout server 15s
+  timeout http-request 10s
+
+frontend bestindividual-tech-frontend
     bind *:80
-    mode http
-    default_backend servers
+    default_backend bestindividual-tech-backend
 
-backend servers
-    mode http
+backend bestindividual-tech-backend
     balance roundrobin
-    server web-01 34.239.253.146:80 check
-    server web-02 100.26.158.196:80 check
-    http-response add-header X-Served-By $hostname
-" | sudo tee -a /etc/haproxy/haproxy.cfg
+    server 460529-web-01 35.175.105.224:80 check
+    server 460529-web-02 100.25.14.214:80 check
+"
 
-# Restart HAProxy to apply changes
-sudo systemctl restart haproxy
+# shellcheck disable=SC2154
+echo "$server_config" | sudo dd status=none of=/etc/haproxy/haproxy.cfg
+
+# enable haproxy to be started by init script
+echo "ENABLED=1" | sudo dd status=none of=/etc/default/haproxy
+
+echo "configured - Roundrobin On web-01 & web-02"
+
+if [ "$(pgrep -c haproxy)" -le 0 ]; then
+	sudo service haproxy start
+else
+	sudo service haproxy restart
+fi
