@@ -45,7 +45,7 @@ frontend bestindividual-frontend-https
         http-request set-header X-Forwarded-Proto https
         default_backend bestindividual-backend
 
-backend clickviral-backend
+backend bestindividual-backend
         balance roundrobin
-        server 460529-web-01 34.239.253.146:80 check
-        server 460529-web-02 100.26.158.196:80 check
+        server 460529-web-01 35.175.105.224:80 check
+        server 460529-web-02 100.25.14.214:80 check
